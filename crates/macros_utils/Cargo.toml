@@ -1,0 +1,11 @@
+[package]
+name = "macros_utils"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["actix"]
+actix = ["dep:actix-web"]
+
+[dependencies]
+actix-web = { workspace = true, optional = true }
