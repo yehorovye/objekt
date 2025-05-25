@@ -9,7 +9,7 @@
 ///
 /// # Usage
 /// ```rust
-/// routes! {
+/// macros_utils::routes! {
 ///     // Execution order:
 ///     with guard(global_auth),    // Applied first
 ///     load admin_dashboard,       // Configured second
