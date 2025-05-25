@@ -8,16 +8,16 @@
 /// - Preserves declaration order for execution order
 ///
 /// # Usage
-/// ```rust
-/// macros_utils::routes! {
-///     // Execution order:
-///     with guard(global_auth),    // Applied first
-///     load admin_dashboard,       // Configured second
-///     with guard(rate_limiter),   // Applied third
-///     route health_check,         // Added fourth
-///     on "/api/v1"                // Base path (optional)
-/// }
-/// ```
+/// # ```rust
+/// # macros_utils::routes! {
+/// #    // Execution order:
+/// #    with guard(global_auth),    // Applied first
+/// #    load admin_dashboard,       // Configured second
+/// #    with guard(rate_limiter),   // Applied third
+/// #    route health_check,         // Added fourth
+/// #    on "/api/v1"                // Base path (optional)
+/// # }
+/// # ```
 ///
 /// # Generates
 /// - A `routes` function that configures a ServiceConfig
