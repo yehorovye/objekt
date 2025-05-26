@@ -1,6 +1,3 @@
----
-
-````md
 # 🧱 objekt
 
 A **simple**, **memory-efficient**, and **token-authenticated** key-value cache server, built in pure Rust.
@@ -161,7 +158,3 @@ MIT
 
 ## ❤️ Made with Rust, Actix, and good taste.
 > thanks to all my friends that were watching me while I was making this lol
-
-```
-
----
