@@ -9,11 +9,12 @@ use serde_json::{Value, json};
 use crate::{AppState, providers::CacheProvider, utils::sanitize_path_keys};
 
 macros_utils::routes! {
-    route route_add
+    route route_upsert
 }
 
-#[put("/{key:.*}")]
-pub async fn route_add(
+/// If the cache route ends in `!` it will be upsert
+#[put("/{key:.*}!")]
+pub async fn route_upsert(
     key: Path<String>,
     value: Json<Value>,
     state: Data<AppState>,
@@ -31,21 +32,13 @@ pub async fn route_add(
             let user = users.values().find(|v| v.password_hash == token);
 
             if let Some(usr) = user {
-                if cache.has_key(sanitized_key.clone()).await {
-                    return HttpResponse::BadRequest().json(json!({
-                        "ok": false,
-                        "message": "this entry already exists",
-                        "data": {}
-                    }));
-                }
-
                 let username = usr.clone().name;
 
-                let _ = cache.add(sanitized_key, value.0, username).await;
+                let _ = cache.upsert(sanitized_key, value.0, username).await;
 
                 return HttpResponse::Created().json(json!({
                     "ok": true,
-                    "message": "created cache entry",
+                    "message": "updated/created cache entry",
                     "data": {}
                 }));
             }

@@ -1,21 +1,19 @@
 use actix_web::{
-    HttpRequest, HttpResponse, Responder,
+    HttpRequest, HttpResponse, Responder, delete,
     http::header,
-    put,
-    web::{Data, Json, Path},
+    web::{Data, Path},
 };
-use serde_json::{Value, json};
+use serde_json::json;
 
 use crate::{AppState, providers::CacheProvider, utils::sanitize_path_keys};
 
 macros_utils::routes! {
-    route route_add
+    route route_remove
 }
 
-#[put("/{key:.*}")]
-pub async fn route_add(
+#[delete("/{key:.*}")]
+pub async fn route_remove(
     key: Path<String>,
-    value: Json<Value>,
     state: Data<AppState>,
     req: HttpRequest,
 ) -> impl Responder {
@@ -30,22 +28,20 @@ pub async fn route_add(
 
             let user = users.values().find(|v| v.password_hash == token);
 
-            if let Some(usr) = user {
-                if cache.has_key(sanitized_key.clone()).await {
-                    return HttpResponse::BadRequest().json(json!({
+            if user.is_some() {
+                if !cache.has_key(sanitized_key.clone()).await {
+                    return HttpResponse::NotFound().json(json!({
                         "ok": false,
-                        "message": "this entry already exists",
+                        "message": "this entry does not exist",
                         "data": {}
                     }));
                 }
 
-                let username = usr.clone().name;
+                let _ = cache.remove(sanitized_key).await;
 
-                let _ = cache.add(sanitized_key, value.0, username).await;
-
-                return HttpResponse::Created().json(json!({
+                return HttpResponse::Ok().json(json!({
                     "ok": true,
-                    "message": "created cache entry",
+                    "message": "deleted cache entry",
                     "data": {}
                 }));
             }

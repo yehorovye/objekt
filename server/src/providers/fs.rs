@@ -8,7 +8,9 @@ use tokio::{
     io::AsyncWriteExt,
 };
 
-use super::{CacheProvider, Metadata};
+use crate::structs::metadata::Metadata;
+
+use super::CacheProvider;
 
 pub struct FileSystemProvider {
     path: PathBuf,
@@ -58,8 +60,6 @@ impl CacheProvider for FileSystemProvider {
                     let meta_path = self.path.join(format!("{key}.meta"));
                     if let Ok(mut metadata_file) = File::create(meta_path).await
                         && let Ok(parsed_meta) = serde_json::to_string(&Metadata {
-                            comment: Some(String::from("test")),
-                            updated_at: Utc::now().to_string(),
                             created_at: Utc::now().to_string(),
                             version: 0,
                             issuer,
@@ -98,9 +98,7 @@ impl CacheProvider for FileSystemProvider {
         let meta_path = self.path.join(format!("{key}.meta"));
         let now = Utc::now().to_string();
         let metadata = Metadata {
-            created_at: now.clone(), // todo: ignore
-            updated_at: now,
-            comment: Some("Updated via upsert".to_string()),
+            created_at: now.clone(),
             version: 0,
             issuer,
         };
@@ -118,25 +116,22 @@ impl CacheProvider for FileSystemProvider {
         self.path.join(&key).exists()
     }
 
-    async fn set_metadata(
-        &self,
-        key: String,
-        metadata: super::Metadata,
-    ) -> Option<super::Metadata> {
+    async fn remove(&self, key: String) -> bool {
         let file = self.path.join(&key);
+
         if !file.exists() {
-            return None;
+            return false;
         }
 
         let meta_path = self.path.join(format!("{key}.meta"));
-        if let Ok(mut meta_file) = File::create(meta_path).await
-            && let Ok(json_metadata) = serde_json::to_string(&metadata)
-        {
-            let _ = meta_file.write_all(json_metadata.as_bytes()).await;
-            return Some(metadata);
+
+        if meta_path.exists() {
+            fs::remove_file(meta_path).await.ok();
         }
 
-        None
+        fs::remove_file(file).await.ok();
+
+        true
     }
 
     async fn list(&self) -> Vec<(String, Value)> {

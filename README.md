@@ -1,2 +1,2 @@
 # objekt
-simple kv cache server
+simple and memory efficient kv cache server

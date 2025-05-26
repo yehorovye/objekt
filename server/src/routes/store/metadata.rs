@@ -5,13 +5,11 @@ use actix_web::{
 use serde_json::json;
 
 use crate::{
-    AppState,
-    providers::{CacheProvider, Metadata},
-    utils::sanitize_path_keys,
+    AppState, providers::CacheProvider, structs::metadata::Metadata, utils::sanitize_path_keys,
 };
 
 macros_utils::routes! {
-    route route_metadata
+    route route_metadata,
 }
 
 #[get("/{key:.*}$")]

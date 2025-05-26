@@ -1,22 +1,8 @@
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-pub mod fs;
+use crate::structs::metadata::Metadata;
 
-/// Stores optional metadata for cache entries.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Metadata {
-    /// Timestamp for when the entry was created.
-    created_at: String,
-    /// Timestamp for when the entry was last updated.
-    updated_at: String,
-    /// Optional comment or note attached to the entry.
-    comment: Option<String>,
-    /// Version of the cache server
-    version: u8,
-    /// Owner of the cache value
-    issuer: String,
-}
+pub mod fs;
 
 /// todo: I am aware that this trait should have generics for better management and scalability
 /// but rust be kinda bitch sometimes
@@ -42,6 +28,12 @@ pub trait CacheProvider {
     /// Otherwise, returns `Some(value)` after inserting it.
     async fn add(&self, key: String, value: Value, issuer: String) -> Option<Value>;
 
+    /// Removes an entry from the cache
+    ///
+    /// If the entry does not exist, returns `false`
+    /// Otherwise, returns `true`
+    async fn remove(&self, key: String) -> bool;
+
     /// Inserts or updates a value in the cache.
     ///
     /// If the key doesn't exist, this behaves like `add`.
@@ -50,12 +42,6 @@ pub trait CacheProvider {
 
     /// Lists all keys and values currently stored in the cache.
     async fn list(&self) -> Vec<(String, Value)>;
-
-    /// Associates metadata with an existing key.
-    ///
-    /// Returns `Some(metadata)` if the key exists and metadata was set.
-    /// Returns `None` if the key does not exist.
-    async fn set_metadata(&self, key: String, metadata: Metadata) -> Option<Metadata>;
 
     /// Retrieves metadata for a given key.
     ///
