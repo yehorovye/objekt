@@ -1,11 +1,8 @@
-use actix_web::{
-    HttpResponse, Responder, get,
-    web::{Data, Path},
-};
+use actix_web::{HttpResponse, Responder, get, web::Data};
 use serde_json::json;
 
 use crate::{
-    AppState, providers::CacheProvider, structs::metadata::Metadata, utils::sanitize_path_keys,
+    AppState, guards::path::SanitizedKey, providers::CacheProvider, structs::metadata::Metadata,
 };
 
 macros_utils::routes! {
@@ -13,11 +10,10 @@ macros_utils::routes! {
 }
 
 #[get("/{key:.*}$")]
-pub async fn route_metadata(key: Path<String>, state: Data<AppState>) -> impl Responder {
+pub async fn route_metadata(key: SanitizedKey, state: Data<AppState>) -> impl Responder {
     let cache = state.provider.clone();
-    let sanitized_key = sanitize_path_keys(key.to_owned());
 
-    let entry: Option<Metadata> = cache.metadata(sanitized_key).await;
+    let entry: Option<Metadata> = cache.metadata(key.0).await;
 
     if let Some(entry) = entry {
         return HttpResponse::Ok().json(entry);

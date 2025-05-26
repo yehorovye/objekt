@@ -6,12 +6,12 @@ pub mod remove;
 pub mod upsert;
 
 macros_utils::routes! {
-    load upsert,
-    load add,
+    load upsert, // protected
+    load add, // protected
     load list,
     load metadata,
     load entry,
-    load remove,
+    load remove, // protected
 
     on "/store"
 }

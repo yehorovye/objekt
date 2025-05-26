@@ -1,12 +1,14 @@
 use actix_web::{
-    HttpRequest, HttpResponse, Responder,
-    http::header,
-    put,
-    web::{Data, Json, Path},
+    HttpResponse, Responder, put,
+    web::{Data, Json},
 };
 use serde_json::{Value, json};
 
-use crate::{AppState, providers::CacheProvider, utils::sanitize_path_keys};
+use crate::{
+    AppState,
+    guards::{auth::AuthUser, path::SanitizedKey},
+    providers::CacheProvider,
+};
 
 macros_utils::routes! {
     route route_add
@@ -14,47 +16,26 @@ macros_utils::routes! {
 
 #[put("/{key:.*}")]
 pub async fn route_add(
-    key: Path<String>,
+    key: SanitizedKey,
     value: Json<Value>,
     state: Data<AppState>,
-    req: HttpRequest,
+    user: AuthUser,
 ) -> impl Responder {
-    if let Some(issuer) = req.headers().get(header::AUTHORIZATION) {
-        let users = state.users.lock().await;
-        let sanitized_key = sanitize_path_keys(key.to_owned());
+    let cache = state.provider.clone();
 
-        let hash = issuer.to_str().ok().map(|s| s.to_string());
+    if cache.has_key(key.0.clone()).await {
+        return HttpResponse::BadRequest().json(json!({
+            "ok": false,
+            "message": "this entry already exists",
+            "data": {}
+        }));
+    }
 
-        if let Some(token) = hash {
-            let cache = state.provider.clone();
+    cache.add(key.0, value.0, user.0.name).await;
 
-            let user = users.values().find(|v| v.password_hash == token);
-
-            if let Some(usr) = user {
-                if cache.has_key(sanitized_key.clone()).await {
-                    return HttpResponse::BadRequest().json(json!({
-                        "ok": false,
-                        "message": "this entry already exists",
-                        "data": {}
-                    }));
-                }
-
-                let username = usr.clone().name;
-
-                let _ = cache.add(sanitized_key, value.0, username).await;
-
-                return HttpResponse::Created().json(json!({
-                    "ok": true,
-                    "message": "created cache entry",
-                    "data": {}
-                }));
-            }
-        }
-    };
-
-    HttpResponse::Unauthorized().json(json!({
-        "ok": false,
-        "message": "you lack the permissions needed for this route",
+    HttpResponse::Created().json(json!({
+        "ok": true,
+        "message": "created cache entry",
         "data": {}
     }))
 }

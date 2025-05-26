@@ -11,7 +11,6 @@ mod guards;
 mod providers;
 mod routes;
 mod structs;
-mod utils;
 
 const DEFAULT_PORT: u16 = 8080;
 

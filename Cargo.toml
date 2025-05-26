@@ -5,6 +5,7 @@ members = ["crates/*", "server"]
 [workspace.dependencies]
 actix-web = { version = "4" }
 tokio = { version = "1", features = ["full"] }
+futures = "0"
 tracing = "0"
 tracing-subscriber = "0"
 chrono = "0"

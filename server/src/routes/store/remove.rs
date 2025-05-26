@@ -1,56 +1,33 @@
-use actix_web::{
-    HttpRequest, HttpResponse, Responder, delete,
-    http::header,
-    web::{Data, Path},
-};
+use actix_web::{HttpResponse, Responder, delete, web::Data};
 use serde_json::json;
 
-use crate::{AppState, providers::CacheProvider, utils::sanitize_path_keys};
+use crate::{
+    AppState,
+    guards::{auth::AuthUser, path::SanitizedKey},
+    providers::CacheProvider,
+};
 
 macros_utils::routes! {
     route route_remove
 }
 
 #[delete("/{key:.*}")]
-pub async fn route_remove(
-    key: Path<String>,
-    state: Data<AppState>,
-    req: HttpRequest,
-) -> impl Responder {
-    if let Some(issuer) = req.headers().get(header::AUTHORIZATION) {
-        let users = state.users.lock().await;
-        let sanitized_key = sanitize_path_keys(key.to_owned());
+pub async fn route_remove(key: SanitizedKey, state: Data<AppState>, _: AuthUser) -> impl Responder {
+    let cache = state.provider.clone();
 
-        let hash = issuer.to_str().ok().map(|s| s.to_string());
+    if !cache.has_key(key.0.clone()).await {
+        return HttpResponse::NotFound().json(json!({
+            "ok": false,
+            "message": "this entry does not exist",
+            "data": {}
+        }));
+    }
 
-        if let Some(token) = hash {
-            let cache = state.provider.clone();
+    let _ = cache.remove(key.0).await;
 
-            let user = users.values().find(|v| v.password_hash == token);
-
-            if user.is_some() {
-                if !cache.has_key(sanitized_key.clone()).await {
-                    return HttpResponse::NotFound().json(json!({
-                        "ok": false,
-                        "message": "this entry does not exist",
-                        "data": {}
-                    }));
-                }
-
-                let _ = cache.remove(sanitized_key).await;
-
-                return HttpResponse::Ok().json(json!({
-                    "ok": true,
-                    "message": "deleted cache entry",
-                    "data": {}
-                }));
-            }
-        }
-    };
-
-    HttpResponse::Unauthorized().json(json!({
-        "ok": false,
-        "message": "you lack the permissions needed for this route",
+    HttpResponse::Ok().json(json!({
+        "ok": true,
+        "message": "deleted cache entry",
         "data": {}
     }))
 }
