@@ -5,6 +5,9 @@ A **simple**, **memory-efficient**, and **token-authenticated** key-value cache 
 Supports ShareX-style uploads, local file-based storage (with custom storage support), and RESTful API interaction.
 
 ---
+[Deepwiki](https://deepwiki.com/simxnet/objekt)
+
+---
 
 ## 🚀 Features
 
