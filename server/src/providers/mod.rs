@@ -1,21 +1,18 @@
-use serde_json::Value;
-
 use crate::structs::metadata::Metadata;
 
 pub mod fs;
+#[cfg(feature = "memory")]
+pub mod memory;
 
-/// todo: I am aware that this trait should have generics for better management and scalability
-/// but rust be kinda bitch sometimes
-///
 /// A trait that defines how a cache backend should behave.
 ///
 /// This is generic over the type of value you're caching (`T`),
 /// which must implement `Clone`.
-pub trait CacheProvider {
+pub trait CacheProvider<T: Clone> {
     /// Looks up a value by key.
     ///
     /// Returns `Some(value)` if the key exists, or `None` otherwise.
-    async fn entry(&self, key: String) -> Option<Value>;
+    async fn entry(&self, key: String) -> Option<T>;
 
     /// Checks if a given key exists in the cache.
     ///
@@ -26,22 +23,19 @@ pub trait CacheProvider {
     ///
     /// If the key already exists, this returns `None` and does not overwrite the value.
     /// Otherwise, returns `Some(value)` after inserting it.
-    async fn add(&self, key: String, value: Value, issuer: String) -> Option<Value>;
+    async fn add(&self, key: String, value: T, issuer: String) -> Option<T>;
 
     /// Removes an entry from the cache
-    ///
-    /// If the entry does not exist, returns `false`
-    /// Otherwise, returns `true`
-    async fn remove(&self, key: String) -> bool;
+    async fn remove(&self, key: String) -> Option<T>;
 
     /// Inserts or updates a value in the cache.
     ///
     /// If the key doesn't exist, this behaves like `add`.
     /// If the key does exist, the value is replaced.
-    async fn upsert(&self, key: String, value: Value, issuer: String) -> Value;
+    async fn upsert(&self, key: String, value: T, issuer: String) -> T;
 
     /// Lists all keys and values currently stored in the cache.
-    async fn list(&self) -> Vec<(String, Value)>;
+    async fn list(&self) -> Vec<(String, T)>;
 
     /// Retrieves metadata for a given key.
     ///

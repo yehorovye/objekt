@@ -3,6 +3,10 @@ name = "server"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = []
+memory = ["dep:dashmap"]
+
 [dependencies]
 tokio.workspace = true
 actix-web.workspace = true
@@ -13,6 +17,10 @@ chrono.workspace = true
 anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+
+[dependencies.dashmap]
+optional = true
+version = "6"
 
 [dependencies.dotenvy]
 version = "0"

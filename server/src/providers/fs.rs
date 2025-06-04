@@ -2,7 +2,8 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use chrono::Utc;
-use serde_json::{self, Value};
+use serde::{Deserialize, Serialize};
+use serde_json;
 use tokio::{
     fs::{self, File},
     io::AsyncWriteExt,
@@ -12,22 +13,26 @@ use crate::structs::metadata::Metadata;
 
 use super::CacheProvider;
 
-pub struct FileSystemProvider {
+pub struct FileSystemProvider<T: Clone> {
     path: PathBuf,
+    _marker: Option<T>, // todo: get rid of ts
 }
 
-impl FileSystemProvider {
+impl<T: Clone> FileSystemProvider<T> {
     pub async fn new(path: PathBuf) -> Result<Self> {
         if !path.exists() {
             fs::create_dir_all(&path).await?
         }
 
-        Ok(Self { path })
+        Ok(Self {
+            path,
+            _marker: None,
+        })
     }
 }
 
-impl CacheProvider for FileSystemProvider {
-    async fn entry(&self, key: String) -> Option<Value> {
+impl<T: Clone + Serialize + for<'a> Deserialize<'a>> CacheProvider<T> for FileSystemProvider<T> {
+    async fn entry(&self, key: String) -> Option<T> {
         let file = self.path.join(&key);
 
         match file.exists() {
@@ -45,7 +50,7 @@ impl CacheProvider for FileSystemProvider {
         }
     }
 
-    async fn add(&self, key: String, value: Value, issuer: String) -> Option<Value> {
+    async fn add(&self, key: String, value: T, issuer: String) -> Option<T> {
         let file = self.path.join(&key);
 
         match file.exists() {
@@ -85,7 +90,7 @@ impl CacheProvider for FileSystemProvider {
         }
     }
 
-    async fn upsert(&self, key: String, value: Value, issuer: String) -> Value {
+    async fn upsert(&self, key: String, value: T, issuer: String) -> T {
         let file = self.path.join(&key);
 
         if let Ok(mut value_file) = File::create(&file).await
@@ -116,11 +121,11 @@ impl CacheProvider for FileSystemProvider {
         self.path.join(&key).exists()
     }
 
-    async fn remove(&self, key: String) -> bool {
+    async fn remove(&self, key: String) -> Option<T> {
         let file = self.path.join(&key);
 
         if !file.exists() {
-            return false;
+            return None;
         }
 
         let meta_path = self.path.join(format!("{key}.meta"));
@@ -131,10 +136,10 @@ impl CacheProvider for FileSystemProvider {
 
         fs::remove_file(file).await.ok();
 
-        true
+        None
     }
 
-    async fn list(&self) -> Vec<(String, Value)> {
+    async fn list(&self) -> Vec<(String, T)> {
         let mut results = Vec::new();
 
         if let Ok(mut entries) = fs::read_dir(&self.path).await {

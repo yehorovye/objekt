@@ -1,3 +1,4 @@
+use crate::providers::CacheProvider;
 use crate::{AppState, structs::user::User};
 use actix_web::HttpResponse;
 use actix_web::{Error, FromRequest, HttpRequest, dev::Payload, http::header, web::Data};
@@ -26,12 +27,14 @@ impl FromRequest for AuthUser {
         };
 
         let maybe_user = {
-            let users = block_on(state.users.lock());
-            users.values().find(|u| u.password_hash == token).cloned()
+            let users = state.users.clone();
+            let list = block_on(users.list());
+
+            list.iter().find(|u| u.1.password_hash == token).cloned()
         };
 
         match maybe_user {
-            Some(user) => ready(Ok(AuthUser(user))),
+            Some(user) => ready(Ok(AuthUser(user.1))),
             None => ready(Err(json_unauthorized("invalid token"))),
         }
     }
