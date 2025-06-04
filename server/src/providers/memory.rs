@@ -75,6 +75,9 @@ impl<T: Clone + Serialize + for<'a> Deserialize<'a>> CacheProvider<T> for Memory
     }
 
     async fn list(&self) -> Vec<(String, T)> {
-        Vec::new()
+        self.storage
+            .iter()
+            .map(|e| (e.key().to_owned(), e.value().to_owned()))
+            .collect()
     }
 }
