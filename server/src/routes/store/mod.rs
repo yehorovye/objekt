@@ -7,6 +7,7 @@ pub mod remove;
 pub mod update;
 
 macros_utils::routes! {
+    load purge, // protected
     load update, // protected
     load add, // protected
     load list,
