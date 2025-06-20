@@ -1,5 +1,5 @@
 use actix_web::{
-    HttpResponse, Responder, put,
+    HttpResponse, Responder, patch,
     web::{Data, Json},
 };
 use serde_json::{Value, json};
@@ -14,8 +14,7 @@ macros_utils::routes! {
     route route_upsert
 }
 
-/// If the cache route ends in `!` it will be upsert
-#[put("/{key:.*}!")]
+#[patch("/{key:.*}")]
 pub async fn route_upsert(
     key: SanitizedKey,
     value: Json<Value>,
@@ -25,11 +24,16 @@ pub async fn route_upsert(
     let cache = state.provider.clone();
     let username = user.0.name;
 
-    cache.upsert(key.0, value.0, username).await;
-
-    HttpResponse::Created().json(json!({
-        "ok": true,
-        "message": "updated/created cache entry",
-        "data": {}
-    }))
+    return match cache.update(key.0, value.0, username).await {
+        Some(value) => HttpResponse::Ok().json(json!({
+            "ok": true,
+            "message": "updated entry",
+            "data": value
+        })),
+        None => HttpResponse::BadRequest().json(json!({
+            "ok": false,
+            "message": "entry does not exist",
+            "data": {}
+        })),
+    };
 }

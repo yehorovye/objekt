@@ -6,22 +6,18 @@ macros_utils::routes! {
     route route_list
 }
 
-/// If the cache route ends in `/` returns a list of entries starting by the key
+/// If the cache route ends in `/`, returns a list of entries starting with the key
 #[get("/{key:.*}/")]
 pub async fn route_list(key: SanitizedKey, state: Data<AppState>) -> impl Responder {
-    let cache = state.provider.clone();
+    let list = state.provider.list().await;
 
-    let list = cache.list().await;
-    let mapped_list = list.iter().map(|v| &v.0).collect::<Vec<_>>();
-
-    if key.0.is_empty() {
-        HttpResponse::Ok().json(mapped_list)
+    let entries: Vec<&String> = if key.0.is_empty() {
+        list.iter().map(|(k, _)| k).collect()
     } else {
-        let filtered_list = mapped_list
-            .iter()
-            .filter(|v| v.starts_with(&key.0))
-            .collect::<Vec<_>>();
+        list.iter()
+            .filter_map(|(k, _)| k.starts_with(&key.0).then_some(k))
+            .collect()
+    };
 
-        HttpResponse::Ok().json(filtered_list)
-    }
+    HttpResponse::Ok().json(entries)
 }

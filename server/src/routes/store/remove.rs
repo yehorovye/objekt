@@ -13,21 +13,18 @@ macros_utils::routes! {
 
 #[delete("/{key:.*}")]
 pub async fn route_remove(key: SanitizedKey, state: Data<AppState>, _: AuthUser) -> impl Responder {
-    let cache = state.provider.clone();
+    let cache = &state.provider;
 
-    if !cache.has_key(key.0.clone()).await {
-        return HttpResponse::NotFound().json(json!({
-            "ok": false,
-            "message": "this entry does not exist",
+    match cache.remove(key.0).await {
+        Some(_) => HttpResponse::Ok().json(json!({
+            "ok": true,
+            "message": "Deleted cache entry",
             "data": {}
-        }));
+        })),
+        None => HttpResponse::NotFound().json(json!({
+            "ok": false,
+            "message": "This entry does not exist",
+            "data": {}
+        })),
     }
-
-    let _ = cache.remove(key.0).await;
-
-    HttpResponse::Ok().json(json!({
-        "ok": true,
-        "message": "deleted cache entry",
-        "data": {}
-    }))
 }

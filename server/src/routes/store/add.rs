@@ -21,21 +21,20 @@ pub async fn route_add(
     state: Data<AppState>,
     user: AuthUser,
 ) -> impl Responder {
-    let cache = state.provider.clone();
-
-    if cache.has_key(key.0.clone()).await {
-        return HttpResponse::BadRequest().json(json!({
-            "ok": false,
-            "message": "this entry already exists",
+    match state
+        .provider
+        .add(key.0.clone(), value.into_inner(), user.0.name)
+        .await
+    {
+        Some(_) => HttpResponse::Created().json(json!({
+            "ok": true,
+            "message": "Created cache entry",
             "data": {}
-        }));
+        })),
+        None => HttpResponse::BadRequest().json(json!({
+            "ok": false,
+            "message": "This entry already exists",
+            "data": {}
+        })),
     }
-
-    cache.add(key.0, value.0, user.0.name).await;
-
-    HttpResponse::Created().json(json!({
-        "ok": true,
-        "message": "created cache entry",
-        "data": {}
-    }))
 }
