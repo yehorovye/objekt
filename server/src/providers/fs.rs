@@ -165,15 +165,13 @@ impl<T: Clone + Serialize + for<'a> Deserialize<'a>> CacheProvider<T> for FileSy
                         continue;
                     }
 
-                    if let Some(meta) = self.read_json::<_, Metadata>(&path).await {
-                        if meta.issuer == issuer {
-                            if let Some(filename) = path.file_stem().and_then(|n| n.to_str()) {
+                    if let Some(meta) = self.read_json::<_, Metadata>(&path).await
+                        && meta.issuer == issuer
+                            && let Some(filename) = path.file_stem().and_then(|n| n.to_str()) {
                                 let value_path = self.value_path(filename);
                                 let _ = fs::remove_file(&value_path).await;
                                 let _ = fs::remove_file(&path).await;
                             }
-                        }
-                    }
                 }
             }
         }

@@ -66,15 +66,14 @@ impl<T: Clone + Serialize + for<'a> Deserialize<'a>> CacheProvider<T> for Memory
             return None;
         }
 
-        if let Some(mut meta_entry) = self.meta.get_mut(&Self::meta_key(&key)) {
-            if let Ok(mut metadata) = serde_json::from_str::<Metadata>(&meta_entry) {
+        if let Some(mut meta_entry) = self.meta.get_mut(&Self::meta_key(&key))
+            && let Ok(mut metadata) = serde_json::from_str::<Metadata>(&meta_entry) {
                 metadata.version += 1;
                 metadata.issuer = issuer;
                 if let Ok(updated) = serde_json::to_string(&metadata) {
                     *meta_entry = updated;
                 }
             }
-        }
 
         self.storage.insert(key.clone(), value.clone());
         Some(value)
@@ -103,11 +102,10 @@ impl<T: Clone + Serialize + for<'a> Deserialize<'a>> CacheProvider<T> for Memory
             .iter()
             .filter_map(|entry| {
                 let meta_json = entry.value();
-                if let Ok(meta) = serde_json::from_str::<Metadata>(meta_json) {
-                    if meta.issuer == issuer {
+                if let Ok(meta) = serde_json::from_str::<Metadata>(meta_json)
+                    && meta.issuer == issuer {
                         return Some(entry.key().trim_end_matches('$').to_owned());
                     }
-                }
                 None
             })
             .collect();

@@ -1,6 +1,6 @@
 use std::{env, sync::Arc};
 
-use actix_web::{App, HttpServer, web::Data};
+use actix_web::{App, HttpServer, middleware::Logger, web::Data};
 use anyhow::Result;
 use providers::{fs::FileSystemProvider, memory::MemoryProvider};
 use serde_json::Value;
@@ -33,15 +33,16 @@ async fn main() -> Result<()> {
         .and_then(|port| port.parse::<u16>().ok())
         .unwrap_or(DEFAULT_PORT);
 
+    // Users are stored in the same way cache is
+    // Warning: When using fs provider, remember to ignore the path
     let shared_data = Data::new(AppState {
-        users: Arc::new(FileSystemProvider::new("./users".into()).await?), // users are also stored
-        // in the same way cache is, so its completely customisable
-        provider: Arc::new(MemoryProvider::new(50)), // dont forget to
-                                                     // ignore this path
+        users: Arc::new(FileSystemProvider::new("./users".into()).await?),
+        provider: Arc::new(MemoryProvider::new(50)),
     });
 
     HttpServer::new(move || {
         App::new()
+            .wrap(Logger::default())
             .app_data(shared_data.clone())
             .configure(routes::routes)
     })
