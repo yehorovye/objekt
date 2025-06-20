@@ -1,163 +1,126 @@
-# 🧱 objekt
+# Objekt 🗄️
 
-A **simple**, **memory-efficient**, and **token-authenticated** key-value cache server, built in pure Rust.
+*A pocket‑sized, self‑hostable JSON cache service built in Rust*
 
-Supports ShareX-style uploads, local file-based storage (with custom storage support), and RESTful API interaction.
+Objekt lets you store any JSON, retrieve it later, and track basic metadata, all through a clean and lightweight REST API. Ideal for prototypes, side projects, and CLI tools where simplicity matters.
 
----
-[Deepwiki](https://deepwiki.com/simxnet/objekt)
+## ✨ Features
 
----
+* **Fast & tiny** - Rust powered.
+* **Pluggable storage** - ships with in‑memory cache; swap in a filesystem or your own provider.
+* **Token auth** - create a user, get a token, slap it in `Authorization` header.
+* **Single‑binary deploy** - run locally or in Docker, no DB required.
 
-## 🚀 Features
+## 🚀 Quick Start
 
-- 🔐 **Token-based Authentication** with per-user hash tokens
-- 🧠 **In-memory user store** + file-based storage backend (easily swappable)
-- ⚡ **Fast and efficient**: runs on Actix Web + Tokio
-- 🔍 **Structured metadata** per key (`issuer`, `created_at`, `version`)
-- 📦 **REST API** for:
-  - Creating users and tokens
-  - Inserting (`PUT`), deleting (`DELETE`), updating (`PUT!`) entries
-  - Fetching values and metadata
-  - Listing keys by prefix
-
----
-
-## 📦 API Overview
-
-### 🔐 Create User & Token
-
-```http
-POST /auth/{username}
-Content-Type: application/json
-
-{
-  "password": "your-password"
-}
-````
-
-→ Returns a `token` to use in `Authorization` header.
-
----
-
-### 📤 Add Entry (fails if exists)
-
-```http
-PUT /store/{key}
-Authorization: <your-token>
-Content-Type: application/json
-
-{ "some": "data" }
-```
-
----
-
-### 🔁 Upsert Entry
-
-```http
-PUT /store/{key}!
-Authorization: <your-token>
-Content-Type: application/json
-
-{ "updated": true }
-```
-
----
-
-### ❌ Remove Entry
-
-```http
-DELETE /store/{key}
-Authorization: <your-token>
-```
-
----
-
-### 📥 Get Entry
-
-```http
-GET /store/{key}
-```
-
----
-
-### 📋 List Keys
-
-```http
-GET /store/{prefix}/
-```
-
----
-
-### 🧾 Metadata
-
-```http
-GET /store/{key}$
-```
-
----
-
-## 🛠 Setup
-
-### 📦 Requirements
-
-* Rust nightly (see `rust-toolchain.toml`)
-* Cargo
-* Optional: Docker + ShareX support
-
-### 🧪 Run Locally
-
-```sh
-# clone and build
-git clone https://github.com/your-org/objekt.git
+```bash
+# 1. Clone & build
+git clone https://github.com/yehorovye/objekt.git
 cd objekt
+cargo run -p server               # or `docker compose up`
 
-# set server secret
-echo 'SERVER_SECRET=supersecret' > .env
-
-# run
-cargo run -p server
+# 2. Required env
+export SERVER_SECRET="super‑secret‑bytes"   # used to mint user tokens
+# Optional
+export PORT=8080                            # default 8080
 ```
 
-Server runs at `http://localhost:8080`
+The server now listens on **[http://localhost:8080](http://localhost:8080)**.
 
----
+## 🔑 Authentication Flow
 
-## 🐳 Docker
+1. **Create a user**
 
-```sh
+   ```bash
+   curl -X POST http://localhost:8080/auth/yehorovye \
+        -H "Content-Type: application/json" \
+        -d '{"password": "objekt-ftw"}'
+   ```
+
+   ```json
+   {
+     "ok": true,
+     "message": "created user",
+     "data": { "token": "ee44d9e0..." }
+   }
+   ```
+
+2. **Use the token** - pass it verbatim (no `Bearer` prefix) in every mutating call:
+
+   ```
+   Authorization: ee44d9e0...
+   ```
+
+## 📡 API Reference
+
+| Method | Path            | Protected | Purpose                                                |
+| ------ | --------------- | ----- | ---------------------------------------------------------  |
+| GET    | `/`             | ❌     | Health probe (“Ok!”)                                      |
+| POST   | `/auth/{user}`  | ❌     | Create user → returns token                               |
+| GET    | `/store/{key}/` | ❌     | List keys **starting with** `key` (or all with `/store/`) |
+| GET    | `/store/{key}`  | ❌     | Fetch value                                               |
+| GET    | `/store/{key}$` | ❌     | Fetch metadata                                            |
+| PUT    | `/store/{key}`  | ✅     | **Create** entry (fails if exists)                        |
+| PATCH  | `/store/{key}`  | ✅     | **Update** existing entry                                 |
+| DELETE | `/store/{key}`  | ✅     | Delete entry                                              |
+| DELETE | `/store/!`      | ✅     | Purge all your entries                                    |
+
+> **Note**: keys are path‑like, `/` inside keys becomes `:` internally, so feel free to nest.
+
+## 📝 Example Session
+
+```bash
+# Add an entry
+curl -X PUT http://localhost:8080/store/projects/rust \
+     -H "Authorization: $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"stars": 1337}'
+
+# → 201
+{ "ok": true, "message": "Created cache entry", "data": {} }
+
+# Retrieve it
+curl http://localhost:8080/store/projects/rust
+# -> 200
+{ "stars": 1337 }
+
+# See metadata
+curl http://localhost:8080/store/projects/rust$
+# -> 200
+{ "created_at": "2025-06-20T12:00:00Z", "version": 0, "issuer": "yehorovye" }
+
+# List everything under "projects/"
+curl http://localhost:8080/store/projects/
+# -> ["projects:rust"]
+```
+
+## 🛠️ Build & Deploy
+
+```bash
+# Release binary
+cargo build --release -p server
+./target/release/server
+
+# Or Docker
 docker build -t objekt .
-docker run -p 8080:8080 -e SERVER_SECRET=supersecret objekt
+docker run -e SERVER_SECRET=shhh -p 8080:8080 objekt
 ```
 
----
-
-## 📁 Storage
-
-By default, entries are stored in:
+## 📂 Project Layout
 
 ```
-./store/
-├── some:key              # value file (json)
-├── some:key.meta         # metadata file
+crates/          # Reusable libs: ciphers, macros_utils
+server/          # Actix‑Web application
+└── src/
+    ├── routes/  # auth, store, root
+    ├── providers/  # memory & filesystem back‑ends
+    └── guards/     # auth + path sanitation
 ```
 
----
+## ❤️ Contributing
 
-## ✨ Design Notes
+PRs and issues are welcome! Clone, create a branch, and let the CI (GitHub Actions) do its magic.
 
-* Keys are sanitized: `/` becomes `:`
-* Routes ending with `!` trigger upsert
-* Routes ending with `$` access metadata
-* User data is stored in memory only — tokens persist via client reuse
+## License
 
----
-
-## 📜 License
-
-MIT
-
----
-
-## ❤️ Made with Rust, Actix, and good taste.
-> thanks to all my friends that were watching me while I was making this lol
+MIT © 2025 Elisiei Yehorovye
