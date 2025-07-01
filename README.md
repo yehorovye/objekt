@@ -1,17 +1,23 @@
-# Objekt 🗄️
+# ***!!THIS PROJECT IS NO LONGER MAINTAINED!!***
+
+I am no longer developing stuff in rust. see [this blog post](https://elisiei.xyz/posts/i-hate-rust).
+
+However, this project is now published under the free domain, do as you may.
+
+## Objekt 🗄️
 
 *A pocket‑sized, self‑hostable JSON cache service built in Rust*
 
 Objekt lets you store any JSON, retrieve it later, and track basic metadata, all through a clean and lightweight REST API. Ideal for prototypes, side projects, and CLI tools where simplicity matters.
 
-## ✨ Features
+### ✨ Features
 
 * **Fast & tiny** - Rust powered.
 * **Pluggable storage** - ships with in‑memory cache; swap in a filesystem or your own provider.
 * **Token auth** - create a user, get a token, slap it in `Authorization` header.
 * **Single‑binary deploy** - run locally or in Docker, no DB required.
 
-## 🚀 Quick Start
+### 🚀 Quick Start
 
 ```bash
 # 1. Clone & build
@@ -27,7 +33,7 @@ export PORT=8080                            # default 8080
 
 The server now listens on **[http://localhost:8080](http://localhost:8080)**.
 
-## 🔑 Authentication Flow
+### 🔑 Authentication Flow
 
 1. **Create a user**
 
@@ -51,7 +57,7 @@ The server now listens on **[http://localhost:8080](http://localhost:8080)**.
    Authorization: ee44d9e0...
    ```
 
-## 📡 API Reference
+### 📡 API Reference
 
 | Method | Path            | Protected | Purpose                                                |
 | ------ | --------------- | ----- | ---------------------------------------------------------  |
@@ -67,7 +73,7 @@ The server now listens on **[http://localhost:8080](http://localhost:8080)**.
 
 > **Note**: keys are path‑like, `/` inside keys becomes `:` internally, so feel free to nest.
 
-## 📝 Example Session
+### 📝 Example Session
 
 ```bash
 # Add an entry
@@ -94,7 +100,7 @@ curl http://localhost:8080/store/projects/
 # -> ["projects:rust"]
 ```
 
-## 🛠️ Build & Deploy
+### 🛠️ Build & Deploy
 
 ```bash
 # Release binary
@@ -106,7 +112,7 @@ docker build -t objekt .
 docker run -e SERVER_SECRET=shhh -p 8080:8080 objekt
 ```
 
-## 📂 Project Layout
+### 📂 Project Layout
 
 ```
 crates/          # Reusable libs: ciphers, macros_utils
@@ -117,7 +123,7 @@ server/          # Actix‑Web application
     └── guards/     # auth + path sanitation
 ```
 
-## ❤️ Contributing
+### ❤️ Contributing
 
 PRs and issues are welcome! Clone, create a branch, and let the CI (GitHub Actions) do its magic.
 
